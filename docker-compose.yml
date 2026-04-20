@@ -14,9 +14,15 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     networks:
-      - product_net
+      product_net:
+        aliases:
+          - product-db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-products_db}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-products_db}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -29,13 +35,15 @@ services:
     container_name: product_backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@product_db:5432/${POSTGRES_DB:-products_db}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@product-db:5432/${POSTGRES_DB:-products_db}
       APP_NAME: ${APP_NAME:-Product Management System}
       DEBUG: ${DEBUG:-false}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     networks:
-      - product_net
+      product_net:
+        aliases:
+          - product-backend
     depends_on:
       product_db:
         condition: service_healthy
@@ -47,7 +55,7 @@ services:
     container_name: product_frontend
     restart: unless-stopped
     environment:
-      BACKEND_URL: http://product_backend:${BACKEND_PORT:-8000}
+      BACKEND_URL: http://product-backend:${BACKEND_PORT:-8000}
     ports:
       - "${FRONTEND_PORT:-8501}:8501"
     networks:

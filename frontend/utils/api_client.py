@@ -2,7 +2,7 @@ import os
 
 import requests
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://product_backend:8000")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://product-backend:8000")
 API_BASE = f"{BACKEND_URL}/api/v1"
 
 
