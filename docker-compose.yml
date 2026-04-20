@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  product_db:
+    image: postgres:16-alpine
+    container_name: product_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-products_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - product_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-products_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  product_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: product_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@product_db:5432/${POSTGRES_DB:-products_db}
+      APP_NAME: ${APP_NAME:-Product Management System}
+      DEBUG: ${DEBUG:-false}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    networks:
+      - product_net
+    depends_on:
+      product_db:
+        condition: service_healthy
+
+  product_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: product_frontend
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://product_backend:${BACKEND_PORT:-8000}
+    ports:
+      - "${FRONTEND_PORT:-8501}:8501"
+    networks:
+      - product_net
+    depends_on:
+      - product_backend
+
+networks:
+  product_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
